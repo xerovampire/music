@@ -26,7 +26,10 @@ import com.materialkolor.dynamiccolor.ColorSpec
 import com.materialkolor.rememberDynamicColorScheme
 import com.materialkolor.score.Score
 
-val DefaultThemeColor = Color(0xFFED5564)
+// Default accent now inspired by the vibrant, neon-like palette from the
+// khokho frontend (see: https://github.com/xerovampire/khokho/tree/main/frontend)
+// Deep indigo / violet works well as a seed for expressive gradients.
+val DefaultThemeColor = Color(0xFF7C3AED)
 
 @Composable
 fun MetrolistTheme(

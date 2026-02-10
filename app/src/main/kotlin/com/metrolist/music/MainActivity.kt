@@ -717,7 +717,14 @@ class MainActivity : ComponentActivity() {
 
                 var showAccountDialog by remember { mutableStateOf(false) }
 
-                val baseBg = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
+                // Base background for navigation + player area.
+                // Use a slightly elevated surface to get a soft, glassy contrast
+                // similar to the dock / bottom bar treatment in the khokho frontend.
+                val baseBg = if (pureBlack) {
+                    Color.Black
+                } else {
+                    MaterialTheme.colorScheme.surfaceContainer
+                }
 
                 CompositionLocalProvider(
                     LocalDatabase provides database,

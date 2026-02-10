@@ -10,8 +10,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.NavigationRail
 import androidx.compose.material3.NavigationRailItem
+import androidx.compose.material3.NavigationRailItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
@@ -47,6 +49,8 @@ fun AppNavigationRail(
     pureBlack: Boolean = false
 ) {
     val containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
+    val selectedColor = MaterialTheme.colorScheme.primary
+    val unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
     
     NavigationRail(
         modifier = modifier,
@@ -70,7 +74,12 @@ fun AppNavigationRail(
                         painter = painterResource(id = iconRes),
                         contentDescription = stringResource(screen.titleId)
                     )
-                }
+                },
+                colors = NavigationRailItemDefaults.colors(
+                    indicatorColor = selectedColor.copy(alpha = 0.4f),
+                    selectedIconColor = selectedColor,
+                    unselectedIconColor = unselectedColor
+                )
             )
         }
         
@@ -89,6 +98,8 @@ fun AppNavigationBar(
 ) {
     val containerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
     val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val selectedColor = MaterialTheme.colorScheme.primary
+    val unselectedColor = MaterialTheme.colorScheme.onSurfaceVariant
     
     NavigationBar(
         modifier = modifier,
@@ -120,7 +131,14 @@ fun AppNavigationBar(
                             overflow = TextOverflow.Ellipsis
                         )
                     }
-                } else null
+                } else null,
+                colors = NavigationBarItemDefaults.colors(
+                    indicatorColor = selectedColor.copy(alpha = 0.4f),
+                    selectedIconColor = selectedColor,
+                    selectedTextColor = selectedColor,
+                    unselectedIconColor = unselectedColor,
+                    unselectedTextColor = unselectedColor
+                )
             )
         }
     }
