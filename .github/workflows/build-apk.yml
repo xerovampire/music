@@ -1,0 +1,116 @@
+name: Build APK
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Build APK (FOSS variant)
+        run: ./gradlew assembleRelease -x lint
+        env:
+          GRADLE_OPTS: "-Xmx4096m"
+
+      - name: Build APK (GMS variant)
+        run: ./gradlew assembleGmsRelease -x lint
+        env:
+          GRADLE_OPTS: "-Xmx4096m"
+        continue-on-error: true
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: apk-builds
+          path: |
+            app/build/outputs/apk/foss/release/*.apk
+            app/build/outputs/apk/gms/release/*.apk
+          if-no-files-found: warn
+
+      - name: Create Release (on tag)
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            app/build/outputs/apk/foss/release/*.apk
+            app/build/outputs/apk/gms/release/*.apk
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-signed:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make gradlew executable
+        run: chmod +x gradlew
+
+      - name: Decode Keystore
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
+        if: secrets.KEYSTORE_BASE64 != ''
+
+      - name: Build Signed APK
+        run: ./gradlew assembleRelease
+        env:
+          GRADLE_OPTS: "-Xmx4096m"
+          KEYSTORE_PATH: "${{ github.workspace }}/release.keystore"
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
+        if: secrets.KEYSTORE_BASE64 != ''
+
+      - name: Clean up Keystore
+        run: rm -f release.keystore
+        if: always()
+
+      - name: Upload Signed APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: signed-apk
+          path: app/build/outputs/apk/foss/release/*-signed.apk
+          if-no-files-found: warn

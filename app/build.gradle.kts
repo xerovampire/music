@@ -15,11 +15,14 @@ plugins {
 }
 
 android {
-    namespace = "com.metrolist.music"
+    // Rebranded namespace / package for Rythmotune
+    namespace = "com.rythmotune.music"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.metrolist.music"
+        // New applicationId so the APK installs as Rythmotune and not as Metrolist.
+        // Backend / networking code remains unchanged; only the package id is different.
+        applicationId = "com.rythmotune.music"
         minSdk = 26
         targetSdk = 36
         versionCode = 139
