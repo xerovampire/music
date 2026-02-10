@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
-    <!-- Background stays a simple gradient/color; foreground will be the Rythmotune logo bitmap -->
-    <background android:drawable="@drawable/ic_launcher_background_v31" />
-    <!-- After you add rythmotune_logo.png to res/drawable, this will show your new logo -->
-    <foreground android:drawable="@drawable/rythmotune_logo" />
+    <background android:drawable="@drawable/ic_launcher_background" />
+    <foreground android:drawable="@mipmap/ic_launcher_foreground" />
     <monochrome android:drawable="@drawable/ic_launcher_monochrome" />
 </adaptive-icon>
