@@ -1,116 +1,71 @@
 name: Build APK
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-  pull_request:
-    branches:
-      - main
-      - develop
   workflow_dispatch:
 
 jobs:
   build:
+    name: Build Release (${{ matrix.variant }})
     runs-on: ubuntu-latest
     
+    strategy:
+      matrix:
+        variant: ["foss", "gms"]
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           submodules: recursive
 
-      - name: Setup Java
-        uses: actions/setup-java@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
         with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: gradle
+          java-version: "21"
+          distribution: "temurin"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
+      - name: Set Up Gradle
+        uses: gradle/actions/setup-gradle@v5
+        with:
+          cache-cleanup: on-success
 
-      - name: Make gradlew executable
+      - name: Setup and Generate Protobuf
+        uses: ./.github/actions/setup-protobuf
+
+      - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build APK (FOSS variant)
-        run: ./gradlew assembleRelease -x lint
+      - name: Build Universal Release APK
+        run: ./gradlew --console=plain assembleUniversal${{ matrix.variant == 'foss' && 'Foss' || 'Gms' }}Release --warning-mode summary
         env:
-          GRADLE_OPTS: "-Xmx4096m"
+          PULL_REQUEST: "false"
+          GITHUB_EVENT_NAME: ${{ github.event_name }}
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+          LASTFM_SECRET: ${{ secrets.LASTFM_SECRET }}
 
-      - name: Build APK (GMS variant)
-        run: ./gradlew assembleGmsRelease -x lint
-        env:
-          GRADLE_OPTS: "-Xmx4096m"
-        continue-on-error: true
-
-      - name: Upload APK artifacts
-        uses: actions/upload-artifact@v4
+      - name: Sign APK
+        uses: ilharp/sign-android-release@v2.0.0
         with:
-          name: apk-builds
-          path: |
-            app/build/outputs/apk/foss/release/*.apk
-            app/build/outputs/apk/gms/release/*.apk
-          if-no-files-found: warn
+          releaseDir: app/build/outputs/apk/universal${{ matrix.variant == 'foss' && 'Foss' || 'Gms' }}/release/
+          signingKey: ${{ secrets.KEYSTORE }}
+          keyAlias: ${{ secrets.KEY_ALIAS }}
+          keyStorePassword: ${{ secrets.KEYSTORE_PASSWORD }}
+          keyPassword: ${{ secrets.KEY_PASSWORD }}
+          buildToolsVersion: 35.0.0
 
-      - name: Create Release (on tag)
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v1
-        with:
-          files: |
-            app/build/outputs/apk/foss/release/*.apk
-            app/build/outputs/apk/gms/release/*.apk
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-  build-signed:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Setup Java
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
-          cache: gradle
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Make gradlew executable
-        run: chmod +x gradlew
-
-      - name: Decode Keystore
+      - name: Move signed APK
         run: |
-          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > release.keystore
-        if: secrets.KEYSTORE_BASE64 != ''
+          OUTPUT_DIR="app/build/outputs/apk/universal${{ matrix.variant == 'foss' && 'Foss' || 'Gms' }}/release"
+          mkdir -p "$OUTPUT_DIR/out"
+          if [ "${{ matrix.variant }}" = "gms" ]; then
+            TARGET_NAME="app-universal-with-Google-Cast.apk"
+          else
+            TARGET_NAME="app-universal-release.apk"
+          fi
+          find "$OUTPUT_DIR" -name "*-signed.apk" -o -name "*-unsigned-signed.apk" | xargs -I{} mv {} "$OUTPUT_DIR/out/$TARGET_NAME"
 
-      - name: Build Signed APK
-        run: ./gradlew assembleRelease
-        env:
-          GRADLE_OPTS: "-Xmx4096m"
-          KEYSTORE_PATH: "${{ github.workspace }}/release.keystore"
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        if: secrets.KEYSTORE_BASE64 != ''
-
-      - name: Clean up Keystore
-        run: rm -f release.keystore
-        if: always()
-
-      - name: Upload Signed APK
-        uses: actions/upload-artifact@v4
+      - name: Upload APK
+        uses: actions/upload-artifact@v6
         with:
-          name: signed-apk
-          path: app/build/outputs/apk/foss/release/*-signed.apk
-          if-no-files-found: warn
+          name: ${{ matrix.variant == 'gms' && 'app-universal-with-Google-Cast' || 'app-universal-release' }}
+          path: app/build/outputs/apk/universal${{ matrix.variant == 'foss' && 'Foss' || 'Gms' }}/release/out/*
