@@ -36,6 +36,7 @@ newpipeextractor = "c1336db"
 tinypinyin = "2.0.3"
 mlkit = "17.0.6"
 protobuf = "4.33.5"
+protobufPlugin = "0.9.6"
 
 [libraries]
 guava = { module = "com.google.guava:guava", version.ref = "guava" }
@@ -122,3 +123,4 @@ compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "
 hilt = { id = "com.google.dagger.hilt.android", version.ref = "hilt" }
 kotlin-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+protobuf = { id = "com.google.protobuf", version.ref = "protobufPlugin" }

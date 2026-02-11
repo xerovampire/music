@@ -12,11 +12,13 @@ plugins {
     alias(libs.plugins.kotlin.ksp)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.protobuf)
 }
 
 android {
     // Rebranded namespace / package for Rythmotune
-    namespace = "com.rythmotune.music"
+    // NOTE: namespace must match the code package (com.metrolist.music) to avoid R import errors
+    namespace = "com.metrolist.music"
     compileSdk = 36
 
     defaultConfig {
@@ -266,4 +268,32 @@ dependencies {
 
     implementation(libs.mlkit.language.id)
     implementation(libs.timber)
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${libs.versions.protobuf.get()}"
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                create("java") {
+                    option("lite")
+                }
+                create("kotlin") {
+                    option("lite")
+                }
+            }
+        }
+    }
+}
+
+android {
+    sourceSets {
+        getByName("main") {
+            proto {
+                srcDir("../metroproto")
+            }
+        }
+    }
 }
